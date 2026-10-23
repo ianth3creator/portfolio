@@ -3,6 +3,7 @@ import { google } from "@ai-sdk/google";
 import { z } from "zod";
 import { answerFromKnowledge, knowledge, type KnowledgeEntry } from "@/lib/knowledge";
 import { getProjects } from "@/lib/projects";
+import { getProfileContent } from "@/lib/site-profile";
 
 /**
  * Hybrid answers:
@@ -37,20 +38,42 @@ export async function POST(req: Request) {
   const { messages } = parsed.data;
   const question = messages.at(-1)!.content;
 
-  const projects = await getProjects();
+  const [projects, profile] = await Promise.all([getProjects(), getProfileContent()]);
   const projectEntries: KnowledgeEntry[] = projects.map((p) => ({
     id: `project-${p.slug}`,
     keywords: [p.title.toLowerCase(), ...p.stack.map((s) => s.toLowerCase()), "project", "projects", "built"],
     answer: `${p.title}: ${p.summary}${p.outcome ? ` — ${p.outcome}` : ""}`,
   }));
+  // Live from the editable profile, so answers match what /admin last saved
+  const ways = [
+    "use the form on the contact page",
+    profile.email && `email ${profile.email}`,
+    profile.whatsapp && "message me on WhatsApp (the button is on the contact page)",
+  ].filter(Boolean);
+  const profileEntries: KnowledgeEntry[] = [
+    {
+      id: "contact",
+      keywords: ["contact", "email", "reach", "talk", "call", "message", "whatsapp", "phone", "number", "linkedin", "github", "socials"],
+      answer: `You can ${ways.join(", or ")}. I usually reply within a day.${
+        profile.links.length ? ` I'm also on ${profile.links.map((l) => l.label).join(", ")}.` : ""
+      }`,
+    },
+    {
+      id: "about-me",
+      keywords: ["background", "experience", "story", "journey", "about"],
+      answer: [profile.statement, ...profile.about].join(" "),
+    },
+    ...profile.facts.map((f, i) => ({ id: `fact-${i}`, keywords: f.label.toLowerCase().split(/\W+/), answer: `${f.label}: ${f.value}.` })),
+  ];
+  const extra = [...projectEntries, ...profileEntries];
 
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
   if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY || limited(ip)) {
-    return Response.json({ answer: answerFromKnowledge(question, projectEntries), source: "built-in" });
+    return Response.json({ answer: answerFromKnowledge(question, extra), source: "built-in" });
   }
 
   try {
-    const facts = [...knowledge, ...projectEntries].map((k) => `- ${k.answer}`).join("\n");
+    const facts = [...knowledge, ...extra].map((k) => `- ${k.answer}`).join("\n");
     const { text } = await generateText({
       model: google(MODEL),
       instructions: `You are the assistant on Ian's portfolio site. Speak as Ian in first person, warm and concise (max 3 short sentences).
@@ -62,6 +85,6 @@ ${facts}`,
     });
     return Response.json({ answer: text.trim(), source: "ai" });
   } catch {
-    return Response.json({ answer: answerFromKnowledge(question, projectEntries), source: "built-in" });
+    return Response.json({ answer: answerFromKnowledge(question, extra), source: "built-in" });
   }
 }

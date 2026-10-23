@@ -1,23 +1,19 @@
 /**
- * Everything the home page says about Ian that isn't a project.
- * The chat's built-in answers (lib/knowledge.ts) should agree with this file.
- *
- * TODO(Ian): rewrite the statement and about paragraphs in your own words.
+ * Fixed details plus the starting About/Contact content. Once you save the profile in /admin
+ * it lives in Firestore (lib/site-profile.ts) and defaultProfileContent is only the fallback.
  */
-import type { SkillGroup } from "@/lib/types";
+import type { ProfileContent, SkillGroup } from "@/lib/types";
 
 export const profile = {
   name: "Ian",
-  location: "Nigeria",
-  email: "ianthecr8tiveengineer@gmail.com",
-  /** WhatsApp number in international format, digits only (e.g. "2348012345678"). Empty hides the button. */
-  whatsapp: "2348146003773",
   /**
    * Web3Forms access key: contact-form messages are emailed to the Web3Forms account's address.
    * It's a public key (safe in client code); the form only works from the domain set in Web3Forms.
    */
   contactFormKey: "b4d70beb-f6e8-4fc1-a7c9-16febf6cc0ea",
-  /** shown as the large statement in the About section */
+} as const;
+
+export const defaultProfileContent: ProfileContent = {
   statement:
     "I design and build software end to end: web platforms, mobile apps and AI systems that hold up once real people start using them.",
   about: [
@@ -29,11 +25,13 @@ export const profile = {
     { label: "Focus", value: "Web, mobile and AI products" },
     { label: "Open to", value: "Freelance and contract work" },
   ],
+  email: "ianthecr8tiveengineer@gmail.com",
+  whatsapp: "2348146003773",
   links: [
     { label: "GitHub", href: "https://github.com/ianth3creator" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/ian-theengineer-647090431" },
   ],
-} as const;
+};
 
 /**
  * Starting skills. Once you save skills in /admin they live in Firestore and this list

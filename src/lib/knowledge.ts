@@ -3,9 +3,9 @@
  * - Used directly when no AI key is set or the free AI quota runs out.
  * - Also given to the AI as its only source of truth, so it doesn't invent facts.
  *
- * TODO(Ian): replace every answer below with your own words. Keep them short.
+ * Contact details and the About text are added at request time from the editable profile
+ * (see app/api/chat/route.ts), so they stay in step with /admin.
  */
-import { profile } from "@/lib/profile";
 
 export type KnowledgeEntry = {
   id: string;
@@ -17,7 +17,7 @@ export type KnowledgeEntry = {
 export const knowledge: KnowledgeEntry[] = [
   {
     id: "intro",
-    keywords: ["who", "you", "about", "yourself", "ian", "introduce"],
+    keywords: ["who", "yourself", "ian", "introduce"],
     answer:
       "I'm Ian — a senior software engineer, software architect and AI engineer based in Nigeria. I design and build web platforms, React Native apps and AI systems end to end.",
   },
@@ -43,11 +43,6 @@ export const knowledge: KnowledgeEntry[] = [
     id: "company",
     keywords: ["gem-it", "gem", "company", "founded", "founder", "startup", "africa", "african"],
     answer: "I founded GEM-IT, a company built toward the growth and evolution of Africa's technology.",
-  },
-  {
-    id: "contact",
-    keywords: ["contact", "email", "reach", "talk", "call", "message", "linkedin", "github", "whatsapp", "phone", "number"],
-    answer: `Use the form on the contact page, email ${profile.email}, or message me on WhatsApp. I usually reply within a day.`,
   },
 ];
 

@@ -1,5 +1,6 @@
 import { resolveIcon } from "@/lib/icons";
 import { profile } from "@/lib/profile";
+import { getProfileContent } from "@/lib/site-profile";
 import { ContactForm } from "./contact-form";
 import { CopyEmail } from "./copy-email";
 import { Reveal } from "./reveal";
@@ -8,12 +9,13 @@ import { SectionHead, sectionClass } from "./section-head";
 const secondary =
   "inline-flex h-12 items-center gap-2 rounded-full border border-line bg-white/50 px-5 text-[15px] font-medium transition-[transform,background-color] duration-150 ease-out hover:bg-white/80 active:scale-[0.97]";
 
-export function Contact() {
-  // Unfilled details (still "TODO" or empty) don't render, so nothing broken goes live.
-  const email = profile.email.startsWith("TODO") ? null : profile.email;
-  const whatsapp = profile.whatsapp.replace(/\D/g, "");
+export async function Contact() {
+  const content = await getProfileContent();
+  // Empty details don't render, so nothing broken goes live.
+  const email = content.email.trim() || null;
+  const whatsapp = content.whatsapp.replace(/\D/g, "");
   const whatsappIcon = resolveIcon("WhatsApp");
-  const links = profile.links.filter((l) => !l.href.includes("TODO"));
+  const links = content.links.filter((l) => l.href.trim());
 
   return (
     <section aria-labelledby="contact-title" className={sectionClass}>
@@ -60,8 +62,9 @@ export function Contact() {
           {links.length > 0 && (
             <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-[15px]">
               {links.map((l) => (
-                <li key={l.label}>
-                  <a href={l.href} target="_blank" rel="noreferrer" className="text-ink-2 underline-offset-4 transition-colors hover:text-ink hover:underline">
+                <li key={l.href}>
+                  <a href={l.href} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-ink-2 underline-offset-4 transition-colors hover:text-ink hover:underline">
+                    <SocialIcon label={l.label} />
                     {l.label}
                   </a>
                 </li>
@@ -71,5 +74,16 @@ export function Contact() {
         </div>
       </Reveal>
     </section>
+  );
+}
+
+/** Logo for a social link when Simple Icons has one (GitHub, X, Instagram…); nothing otherwise. */
+export function SocialIcon({ label }: { label: string }) {
+  const icon = resolveIcon(label);
+  if (!icon) return null;
+  return (
+    <svg viewBox="0 0 24 24" className="size-4 shrink-0 fill-current" aria-hidden>
+      <path d={icon.path} />
+    </svg>
   );
 }

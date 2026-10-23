@@ -7,6 +7,7 @@ import { adminAuth, adminDb } from "@/lib/firebase/admin";
 import { isAdminEmail, requireAdmin, SESSION_COOKIE } from "@/lib/auth";
 import { PROJECTS_TAG } from "@/lib/projects";
 import { SKILLS_DOC, SKILLS_TAG } from "@/lib/skills";
+import { PROFILE_DOC, PROFILE_TAG } from "@/lib/site-profile";
 
 const FIVE_DAYS = 60 * 60 * 24 * 5 * 1000;
 
@@ -109,5 +110,24 @@ export async function saveSkills(input: unknown): Promise<{ ok: true } | { ok: f
   }));
   await adminDb().doc(SKILLS_DOC).set({ groups, updatedAt: Date.now() });
   updateTag(SKILLS_TAG);
+  return { ok: true };
+}
+
+const profileSchema = z.object({
+  statement: z.string().trim().min(1, "The headline statement can't be empty").max(300),
+  about: z.array(z.string().trim().min(1)).max(8).default([]),
+  facts: z.array(z.object({ label: z.string().trim().min(1), value: z.string().trim().min(1) })).max(6).default([]),
+  email: z.email("That email doesn't look right").or(z.literal("")),
+  // digits only, with the country code (e.g. 2348012345678)
+  whatsapp: z.string().transform((v) => v.replace(/\D/g, "")),
+  links: z.array(z.object({ label: z.string().trim().min(1), href: z.url("Links need the full address, starting with https://") })).max(12).default([]),
+});
+
+export async function saveProfile(input: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+  const parsed = profileSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: z.prettifyError(parsed.error) };
+  await adminDb().doc(PROFILE_DOC).set({ ...parsed.data, updatedAt: Date.now() });
+  updateTag(PROFILE_TAG);
   return { ok: true };
 }

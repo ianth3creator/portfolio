@@ -52,3 +52,17 @@ export type SkillGroup = {
   note: string;
   items: SkillItem[];
 };
+
+/** The editable parts of the About and Contact pages (stored in Firestore, edited in /admin). */
+export type ProfileContent = {
+  /** the large statement at the top of the About page */
+  statement: string;
+  about: string[];
+  facts: { label: string; value: string }[];
+  /** public email; empty hides the email buttons */
+  email: string;
+  /** international format, digits only; empty hides the WhatsApp button */
+  whatsapp: string;
+  /** socials and other profiles (GitHub, LinkedIn, X…) */
+  links: { label: string; href: string }[];
+};

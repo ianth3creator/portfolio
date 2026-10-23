@@ -1,11 +1,15 @@
 import "server-only";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { adminAuth, firebaseAdminConfigured } from "@/lib/firebase/admin";
 
 export const SESSION_COOKIE = "__session";
 
 /** Returns the admin's email when the request carries a valid session for ADMIN_EMAIL, else null. */
 export async function getAdmin(): Promise<string | null> {
+  // Session checks compare against the current time (Date.now inside Firebase), so they
+  // must only run per request, never while Next prerenders the page.
+  await connection();
   if (!firebaseAdminConfigured) return null;
   const cookie = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!cookie) return null;

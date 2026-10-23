@@ -1,16 +1,18 @@
 import Image from "next/image";
 import { profile } from "@/lib/profile";
+import { getProfileContent } from "@/lib/site-profile";
 import { Reveal } from "./reveal";
 import { SectionHead, sectionClass } from "./section-head";
 
-export function About() {
+export async function About() {
+  const content = await getProfileContent();
   return (
     <section aria-labelledby="me-title" className={sectionClass}>
       <Reveal className="grid gap-10 md:grid-cols-[1.4fr_1fr] md:gap-14">
         <div>
-          <SectionHead id="me-title" label="About" title={profile.statement} />
+          <SectionHead id="me-title" label="About" title={content.statement} />
           <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-ink-2 sm:text-[17px]">
-            {profile.about.map((p) => (
+            {content.about.map((p) => (
               <p key={p.slice(0, 24)} data-reveal className="max-w-[60ch] text-pretty">
                 {p}
               </p>
@@ -31,7 +33,7 @@ export function About() {
             />
           </div>
           <dl data-reveal data-glass="panel" className="glass p-6">
-            {profile.facts.map((f, i) => (
+            {content.facts.map((f, i) => (
               <div key={f.label} className={i > 0 ? "mt-5 border-t border-line pt-5" : undefined}>
                 <dt className="font-mono text-[11px] tracking-[0.12em] text-ink-3 uppercase">{f.label}</dt>
                 <dd className="mt-1.5 text-[16px] font-medium">{f.value}</dd>

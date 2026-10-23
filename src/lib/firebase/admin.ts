@@ -1,7 +1,7 @@
 import "server-only";
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
 /** True once the three server env vars are set (lets the site build before Firebase is configured). */
 export const firebaseAdminConfigured = Boolean(
@@ -25,14 +25,21 @@ function app(): App {
   );
 }
 
-let dbConfigured = false;
-export const adminDb = () => {
-  const db = getFirestore(app());
-  if (!dbConfigured) {
-    // optional fields (e.g. a screenshot without a caption) arrive as undefined; skip them instead of throwing
-    db.settings({ ignoreUndefinedProperties: true });
-    dbConfigured = true;
+// Kept on globalThis, not in a module variable: the Firestore instance outlives this module
+// (dev hot reloads, separate server bundles), and settings() throws if called a second time.
+const shared = globalThis as typeof globalThis & { __portfolioDb?: Firestore };
+
+export const adminDb = (): Firestore => {
+  if (!shared.__portfolioDb) {
+    const db = getFirestore(app());
+    try {
+      // optional fields (e.g. a screenshot without a caption) arrive as undefined; skip them instead of throwing
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // already configured by an earlier copy of this module
+    }
+    shared.__portfolioDb = db;
   }
-  return db;
+  return shared.__portfolioDb;
 };
 export const adminAuth = () => getAuth(app());
