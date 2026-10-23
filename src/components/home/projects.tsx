@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { ProjectStrip } from "@/components/projects/project-strip";
 import { CldImage } from "@/components/ui/cld-image";
 import { platforms, wideImage } from "@/lib/project-utils";
 import { getProjects } from "@/lib/projects";
+import type { StripItem } from "@/lib/strip-store";
 import type { Project } from "@/lib/types";
 import { Reveal } from "./reveal";
 import { SectionHead, sectionClass } from "./section-head";
@@ -17,7 +19,12 @@ export async function Projects() {
             Case studies are on their way. In the meantime, ask me about my work in the chat on the home page.
           </p>
         ) : (
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2">
+          <>
+            <ProjectStrip items={projects.map(toStripItem)} />
+            <h2 data-reveal className="mt-20 font-mono text-[11px] tracking-[0.14em] text-ink-3 uppercase">
+              All projects
+            </h2>
+          <ul className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {projects.map((p, i) => (
               <li key={p.id} data-reveal className={p.featured && i === 0 ? "sm:col-span-2" : undefined}>
                 <Link
@@ -45,6 +52,7 @@ export async function Projects() {
               </li>
             ))}
           </ul>
+          </>
         )}
       </Reveal>
     </section>
@@ -89,4 +97,16 @@ function CardMedia({ project, wide }: { project: Project; wide: boolean }) {
       ))}
     </div>
   );
+}
+
+/** Plain, serialisable data for the strip (the client only needs images and names). */
+function toStripItem(p: Project): StripItem {
+  const image = wideImage(p);
+  const pick = (a: { publicId: string; width: number; height: number }) => ({ publicId: a.publicId, width: a.width, height: a.height });
+  return {
+    slug: p.slug,
+    title: p.title,
+    image: image ? pick(image) : undefined,
+    phones: p.appShots.filter((a) => a.resourceType === "image").slice(0, 3).map(pick),
+  };
 }

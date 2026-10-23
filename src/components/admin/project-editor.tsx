@@ -93,7 +93,7 @@ export function ProjectEditor({ email, projects }: { email: string; projects: Pr
       {draft && (
         <div className="glass space-y-6 p-6">
           <Fieldset title="Basics">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="text-sm">
                 Title
                 <input
@@ -119,7 +119,7 @@ export function ProjectEditor({ email, projects }: { email: string; projects: Pr
               Problem it solved
               <textarea className={field} rows={3} value={draft.problem} onChange={(e) => set("problem", e.target.value)} />
             </label>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="text-sm">
                 My role
                 <input className={field} value={draft.role} onChange={(e) => set("role", e.target.value)} />
@@ -136,7 +136,7 @@ export function ProjectEditor({ email, projects }: { email: string; projects: Pr
           </Fieldset>
 
           <Fieldset title="Links" hint="Leave any you don't have empty; only filled ones show as buttons.">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="text-sm">
                 Website URL
                 <input className={field} value={draft.liveUrl ?? ""} onChange={(e) => set("liveUrl", e.target.value)} placeholder="https://…" />

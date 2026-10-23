@@ -20,6 +20,7 @@ Goal: a client opens it and within five seconds thinks "this person is good". No
 3. **"Ask me anything"** (`components/chat`, `app/api/chat`): Gemini free tier when `GOOGLE_GENERATIVE_AI_API_KEY` is set, otherwise/fallback built-in answers from `lib/knowledge.ts`. The AI may only use those facts + project data.
 4. **Glass tuning** (see also the cost note there) lives in `glassProps` in `glass-scene.tsx` (roughness, ior, chromaticAberration, distortion). Tune on a real mid-range Android phone.
 5. **Pages**: `/` (hero + chat), `/about`, `/projects`, `/projects/[slug]`, `/skills`, `/contact`, all in `app/(site)` so the glass canvas stays mounted across navigation. `template.tsx` gives each page a short fade-up.
+6. **Projects bending strip** (in progress): full spec in `docs/projects-strip.md`. Renders inside the shared glass canvas; read that file before touching `/projects`.
 
 ## Architecture
 - Next.js 16 (App Router, `cacheComponents`), React 19, TypeScript, Tailwind v4.

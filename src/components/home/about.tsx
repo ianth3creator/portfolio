@@ -10,7 +10,7 @@ export async function About() {
   const content = await getProfileContent();
   return (
     <section aria-labelledby="me-title" className={sectionClass}>
-      <Reveal className="grid gap-10 md:grid-cols-[1.4fr_1fr] md:gap-14">
+      <Reveal className="grid grid-cols-1 gap-10 md:grid-cols-[1.4fr_1fr] md:gap-14">
         <div>
           <SectionHead id="me-title" label="About" title={content.statement} />
           <div className="mt-6 space-y-4 text-[16px] leading-relaxed text-ink-2 sm:text-[17px]">
@@ -56,7 +56,7 @@ export async function About() {
               <p className="mt-3 max-w-[60ch] text-[16px] leading-relaxed text-ink-2 sm:text-[17px]">{content.certificationsIntro}</p>
             )}
           </div>
-          <ul className="mt-8 grid gap-5 sm:grid-cols-2">
+          <ul className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {content.certifications.map((c, i) => (
               <li key={`${c.title}-${i}`} data-reveal>
                 <CertificationCard cert={c} />

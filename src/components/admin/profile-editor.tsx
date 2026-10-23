@@ -89,7 +89,7 @@ export function ProfileEditor({ initial }: { initial: ProfileContent }) {
 
       <section className="space-y-3 border-t border-line pt-6">
         <h3 className={legend}>Contact details</h3>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <label className="text-sm">
             Public email (empty hides the email buttons)
             <input className={`${field} mt-1`} type="email" value={p.email} onChange={(e) => edit({ email: e.target.value })} />
@@ -121,7 +121,7 @@ export function ProfileEditor({ initial }: { initial: ProfileContent }) {
 
       <section className="space-y-3 border-t border-line pt-6">
         <h3 className={legend}>Certifications (About page)</h3>
-        <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_2fr]">
           <label className="text-sm">
             Section heading
             <input className={`${field} mt-1`} value={p.certificationsTitle} onChange={(e) => edit({ certificationsTitle: e.target.value })} />
@@ -137,7 +137,7 @@ export function ProfileEditor({ initial }: { initial: ProfileContent }) {
               edit({ certifications: p.certifications.map((x, j) => (j === i ? { ...x, ...patch } : x)) });
             return (
               <li key={i} className="space-y-3 rounded-2xl border border-line bg-white/40 p-4">
-                <div className="grid gap-3 sm:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                   <input className={field} placeholder="Title, e.g. Frontend Development" value={c.title} onChange={(e) => update({ title: e.target.value })} />
                   <input className={field} placeholder="Issuer, e.g. TechCrush" value={c.issuer} onChange={(e) => update({ issuer: e.target.value })} />
                   <input className={field} placeholder="Date, e.g. 2025" value={c.date} onChange={(e) => update({ date: e.target.value })} />

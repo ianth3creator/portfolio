@@ -9,7 +9,7 @@ export async function Skills() {
     <section aria-labelledby="skills-title" className={sectionClass}>
       <Reveal>
         <SectionHead id="skills-title" label="Skills" title="What I bring to a team." />
-        <ul className="mt-10 grid gap-4 md:grid-cols-3">
+        <ul className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
           {groups.map((g) => (
             <li key={g.title} data-reveal data-glass="panel" className="glass p-6">
               <h2 className="text-[19px] font-semibold tracking-[-0.01em]">{g.title}</h2>

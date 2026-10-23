@@ -5,6 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, MeshTransmissionMaterial, PerformanceMonitor, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import { Backdrop } from "./backdrop";
+import { StripGL } from "./strip/strip-gl";
 
 /**
  * One fixed, full-screen canvas behind the page. Every DOM element with a
@@ -145,6 +146,8 @@ function Scene({ animate }: { animate: boolean }) {
         <Lightformer intensity={1.5} position={[6, -1, 1]} scale={[3, 6, 1]} rotation-y={-Math.PI / 2} />
         <Lightformer intensity={0.6} color="#ffd9ec" position={[0, -5, 2]} scale={[10, 2, 1]} />
       </Environment>
+      {/* /projects bending strip; draws nothing until that page registers its stage */}
+      <StripGL />
       {targets.map((t) => (t.kind === "orb" ? <Orb key={t.id} el={t.el} /> : <Panel key={t.id} el={t.el} />))}
     </>
   );
