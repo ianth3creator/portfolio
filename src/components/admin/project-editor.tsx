@@ -28,7 +28,8 @@ const empty = (order: number): Draft => ({
   appShots: [],
   gallery: [],
   featured: false,
-  published: false,
+  // new projects go live on save; untick to keep one as a draft
+  published: true,
   order,
 });
 
@@ -185,7 +186,7 @@ export function ProjectEditor({ email, projects }: { email: string; projects: Pr
           <div className="flex flex-wrap gap-6 text-sm">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={draft.published} onChange={(e) => set("published", e.target.checked)} />
-              Published
+              Published {!draft.published && <span className="text-amber-700">(draft: hidden from the site)</span>}
             </label>
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={draft.featured} onChange={(e) => set("featured", e.target.checked)} />
@@ -216,7 +217,7 @@ export function ProjectEditor({ email, projects }: { email: string; projects: Pr
             <div>
               <p className="font-medium">{p.title}</p>
               <p className="text-xs text-ink-3">
-                {p.published ? "Published" : "Draft"} · order {p.order} · {p.webShots.length} web / {p.appShots.length} app shots
+                {p.published ? "Live" : <span className="font-medium text-amber-700">Draft, not on the site</span>} · order {p.order} · {p.webShots.length} web / {p.appShots.length} app shots
               </p>
             </div>
             <div className="flex gap-2 text-sm">
