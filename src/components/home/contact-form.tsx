@@ -55,7 +55,7 @@ export function ContactForm({ accessKey }: { accessKey: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-8 grid gap-4 sm:grid-cols-2">
+    <form onSubmit={submit} className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
       <label className="text-[14px] text-ink-2">
         Name
         <input name="name" required autoComplete="name" className={`${input} h-12`} />

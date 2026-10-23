@@ -17,7 +17,7 @@ export async function Projects() {
             Case studies are on their way. In the meantime, ask me about my work in the chat on the home page.
           </p>
         ) : (
-          <ul className="mt-10 grid gap-5 sm:grid-cols-2">
+          <ul className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2">
             {projects.map((p, i) => (
               <li key={p.id} data-reveal className={p.featured && i === 0 ? "sm:col-span-2" : undefined}>
                 <Link

@@ -65,7 +65,7 @@ async function CaseStudy({ params }: Pick<PageProps<"/projects/[slug]">, "params
         </div>
       )}
 
-      <div className="mt-12 grid gap-10 md:grid-cols-[1fr_17rem]">
+      <div className="mt-12 grid grid-cols-1 gap-10 md:grid-cols-[1fr_17rem]">
         <div className="space-y-10">
           {project.problem && (
             <section data-reveal>
@@ -139,7 +139,7 @@ async function CaseStudy({ params }: Pick<PageProps<"/projects/[slug]">, "params
           <h2 id="more-media" data-reveal className={label}>
             More
           </h2>
-          <ul className="mt-6 grid gap-4 sm:grid-cols-2">
+          <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
             {project.gallery.map((a, i) => (
               <li key={a.publicId} data-reveal className={i % 3 === 0 ? "sm:col-span-2" : undefined}>
                 <figure>

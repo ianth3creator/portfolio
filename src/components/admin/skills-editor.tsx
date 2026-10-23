@@ -43,7 +43,7 @@ export function SkillsEditor({ initial, icons }: { initial: SkillGroup[]; icons:
 
       {groups.map((g, gi) => (
         <div key={gi} className="glass space-y-4 p-5">
-          <div className="grid gap-3 sm:grid-cols-[1fr_2fr_auto]">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_2fr_auto]">
             <input className={field} value={g.title} placeholder="Group title" onChange={(e) => edit((d) => ((d[gi].title = e.target.value), d))} />
             <input className={field} value={g.note} placeholder="One-line note" onChange={(e) => edit((d) => ((d[gi].note = e.target.value), d))} />
             <div className="flex items-center gap-1">
