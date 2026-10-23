@@ -31,6 +31,9 @@ export const defaultProfileContent: ProfileContent = {
     { label: "GitHub", href: "https://github.com/ianth3creator" },
     { label: "LinkedIn", href: "https://www.linkedin.com/in/ian-theengineer-647090431" },
   ],
+  certificationsTitle: "Certifications",
+  certificationsIntro: "",
+  certifications: [],
 };
 
 /**

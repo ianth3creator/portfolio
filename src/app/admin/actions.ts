@@ -121,6 +121,21 @@ const profileSchema = z.object({
   // digits only, with the country code (e.g. 2348012345678)
   whatsapp: z.string().transform((v) => v.replace(/\D/g, "")),
   links: z.array(z.object({ label: z.string().trim().min(1), href: z.url("Links need the full address, starting with https://") })).max(12).default([]),
+  certificationsTitle: z.string().trim().max(60).default("Certifications"),
+  certificationsIntro: z.string().trim().max(300).default(""),
+  certifications: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1, "Every certification needs a title"),
+        issuer: z.string().trim().default(""),
+        date: z.string().trim().default(""),
+        description: z.string().trim().max(600).default(""),
+        credentialUrl: z.url("Credential links need the full address, starting with https://").optional().or(z.literal("")),
+        image: asset.optional(),
+      }),
+    )
+    .max(24)
+    .default([]),
 });
 
 export async function saveProfile(input: unknown): Promise<{ ok: true } | { ok: false; error: string }> {

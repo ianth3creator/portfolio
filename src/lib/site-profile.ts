@@ -24,5 +24,8 @@ export async function getProfileContent(): Promise<ProfileContent> {
     email: data.email ?? defaultProfileContent.email,
     whatsapp: data.whatsapp ?? defaultProfileContent.whatsapp,
     links: data.links ?? defaultProfileContent.links,
+    certificationsTitle: data.certificationsTitle || defaultProfileContent.certificationsTitle,
+    certificationsIntro: data.certificationsIntro ?? defaultProfileContent.certificationsIntro,
+    certifications: data.certifications ?? defaultProfileContent.certifications,
   };
 }

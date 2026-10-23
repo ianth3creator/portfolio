@@ -65,4 +65,21 @@ export type ProfileContent = {
   whatsapp: string;
   /** socials and other profiles (GitHub, LinkedIn, X…) */
   links: { label: string; href: string }[];
+  /** heading and intro line of the certifications section on the About page */
+  certificationsTitle: string;
+  certificationsIntro: string;
+  /** shown on the About page; the section is hidden while this is empty */
+  certifications: Certification[];
+};
+
+export type Certification = {
+  title: string;
+  issuer: string;
+  /** free text, e.g. "2025" or "March 2025" */
+  date: string;
+  description: string;
+  /** link to verify the credential, if the issuer provides one */
+  credentialUrl?: string;
+  /** photo or scan of the certificate */
+  image?: CloudinaryAsset;
 };
