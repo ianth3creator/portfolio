@@ -9,6 +9,7 @@ import { useGSAP } from "@gsap/react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { getLenis } from "@/lib/lenis";
 import { motion, stripLayout, stripStore, type StripItem } from "@/lib/strip-store";
+import { CldImage } from "@/components/ui/cld-image";
 import { CardMedia } from "./card-media";
 
 gsap.registerPlugin(useGSAP, ScrollTrigger);
@@ -46,6 +47,7 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
   const root = useRef<HTMLDivElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const fill = useRef<HTMLDivElement>(null);
+  const crisp = useRef<HTMLDivElement>(null);
   const info = useRef<HTMLDivElement>(null);
   const trigger = useRef<ScrollTrigger | null>(null);
   const settle = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -274,6 +276,26 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
     action();
   }
 
+  // ---------- crisp image: a real <img> over the centred card whenever the strip is at rest ----------
+  // The WebGL canvas never renders at a phone's full density (capped, and lowered under load), so
+  // screenshots drawn there look soft. At rest the centred card is exactly flat (uFlat in the shader),
+  // and this DOM image, at full device resolution, sits on it pixel for pixel. Any motion hides it.
+  useEffect(() => {
+    let atRest = false;
+    const update = () => {
+      const el = crisp.current;
+      if (!el) return;
+      const { activeIndex: active, openIndex: opened } = stripStore.get();
+      const rest =
+        opened === null && motion.open === 0 && Math.abs(motion.velocity) < 0.01 && Math.abs(motion.progress - active) < 0.002;
+      if (rest === atRest) return;
+      atRest = rest;
+      el.dataset.rest = String(rest);
+    };
+    gsap.ticker.add(update);
+    return () => gsap.ticker.remove(update);
+  }, []);
+
   // ---------- info: progress line follows the strip; text swaps only when the index changes ----------
   useEffect(() => {
     const update = () => {
@@ -335,10 +357,29 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
           onPointerMove={onPointerMove}
           onPointerUp={onPointerUp}
           onPointerCancel={onPointerCancel}
-          className={`h-[calc(82cqw*0.84375)] w-full touch-pan-y rounded-[22px] outline-none select-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-paper md:h-[calc(min(56cqw,860px)*0.84375)] ${
+          className={`relative h-[calc(82cqw*0.84375)] w-full touch-pan-y rounded-[22px] outline-none select-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-4 focus-visible:ring-offset-paper md:h-[calc(min(56cqw,860px)*0.84375)] ${
             count > 1 ? "cursor-grab active:cursor-grabbing" : "cursor-pointer"
           }`}
-        />
+        >
+          {/* same size, position and corners as the centred WebGL card (stripLayout); see the crisp-image effect */}
+          <div
+            ref={crisp}
+            data-rest="false"
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-1/2 aspect-[16/10] w-[82cqw] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-[14px] opacity-0 transition-opacity duration-75 data-[rest=true]:opacity-100 data-[rest=true]:duration-200 md:w-[min(56cqw,860px)] md:rounded-[18px]"
+          >
+            {items.map((item, i) =>
+              // the active card and its neighbours, so the next one is already loaded
+              Math.abs(i - activeIndex) <= 1 ? (
+                <div key={item.slug} className={`absolute inset-0 ${i === activeIndex ? "opacity-100" : "opacity-0"}`}>
+                  <CrispCard item={item} priority={i === activeIndex} />
+                </div>
+              ) : null,
+            )}
+            {/* the WebGL card's thin bright rim */}
+            <div className="absolute inset-0 rounded-[inherit] shadow-[inset_0_0_0_1.5px_rgb(255_255_255/0.35)]" />
+          </div>
+        </div>
       </div>
       {/* announces the settled project, not every card passed mid-drag */}
       <p aria-live="polite" className="sr-only">
@@ -400,6 +441,49 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Full-resolution DOM version of a strip card: the same 16:10 top-anchored crop as the WebGL
+ * texture, or for app-only projects the same three-phone layout as phoneComposite().
+ */
+function CrispCard({ item, priority }: { item: StripItem; priority: boolean }) {
+  const sizes = "(min-width: 768px) min(56vw, 860px), 82vw";
+  if (item.image) {
+    return (
+      <CldImage
+        src={item.image.publicId}
+        width={1600}
+        height={1000}
+        crop="fill"
+        gravity="north"
+        sizes={sizes}
+        priority={priority}
+        loading={priority ? undefined : "eager"}
+        alt=""
+        className="h-full w-full object-cover"
+      />
+    );
+  }
+  const phones = item.phones.slice(0, 3);
+  const span = phones.length * 0.28 + (phones.length - 1) * 0.04;
+  return (
+    <div className="relative h-full w-full bg-[#efebe3]">
+      {phones.map((p, i) => (
+        <CldImage
+          key={p.publicId}
+          src={p.publicId}
+          width={p.width}
+          height={p.height}
+          sizes="25vw"
+          loading="eager"
+          alt=""
+          className="absolute w-[28%] rounded-t-[6px] shadow-[0_10px_24px_-14px_oklch(0.2_0.02_60/0.5)]"
+          style={{ left: `${((1 - span) / 2 + i * 0.32) * 100}%`, top: i === 1 ? "6%" : "12%" }}
+        />
+      ))}
     </div>
   );
 }

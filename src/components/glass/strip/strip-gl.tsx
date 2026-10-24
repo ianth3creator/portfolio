@@ -79,6 +79,9 @@ export function StripGL() {
       u.uWaveY.value = 0.06 * cardH;
       u.uWaveZ.value = 0.12 * cardW;
       u.uWaveK.value = (2 * Math.PI) / (1.6 * cardW);
+      // the centred card goes flat as the strip comes to rest (and curves again as soon as it moves)
+      // fully flat below |velocity| 0.01, the same threshold at which ProjectStrip shows the crisp image
+      u.uFlat.value = Math.max(0, 1 - Math.abs(index - progress)) * (1 - THREE.MathUtils.smoothstep(Math.abs(motion.velocity), 0.01, 0.12));
       u.uOpen.value = isOpen ? motion.open : 0;
       u.uOpenScale.value = openScale;
       u.uDim.value = openIndex !== null && !isOpen ? motion.open : 0;
@@ -130,6 +133,7 @@ function StripCard({
       uWaveK: { value: 0.01 },
       uOpen: { value: 0 },
       uOpenScale: { value: 1 },
+      uFlat: { value: 0 },
       uDim: { value: 0 },
       uReveal: { value: 0 },
       uPaper: { value: new THREE.Vector3(paper.r, paper.g, paper.b) },

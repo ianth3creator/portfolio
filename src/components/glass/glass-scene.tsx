@@ -28,7 +28,10 @@ function useGlassTargets() {
     const ids = new WeakMap<HTMLElement, number>();
     let next = 1;
     const scan = () => {
-      const els = Array.from(document.querySelectorAll<HTMLElement>("[data-glass]"));
+      // Only real glass values: <html data-glass="webgl"> (the flag that switches the CSS blur off)
+      // also carries the attribute, and matching it put a full-screen glass slab in front of the
+      // whole page, refracting, shrinking and softening everything behind it.
+      const els = Array.from(document.querySelectorAll<HTMLElement>('[data-glass="panel"], [data-glass="orb"]'));
       // Any DOM change in the page triggers a scan (text swaps, animations adding spans), but the
       // glass scene only needs to re-render when the set of glass elements actually changes.
       setTargets((prev) => {

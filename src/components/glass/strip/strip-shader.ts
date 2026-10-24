@@ -19,6 +19,7 @@ uniform float uWaveZ;      // wave depth, px
 uniform float uWaveK;      // wave spatial frequency, rad/px
 uniform float uOpen;       // 0 → 1: unbend and zoom (only on the opened card)
 uniform float uOpenScale;  // zoom factor reached at uOpen = 1
+uniform float uFlat;       // 1 = this card is perfectly flat (the centred card at rest)
 
 varying vec2 vUv;
 varying vec2 vLocal;
@@ -27,9 +28,13 @@ varying float vTheta;
 void main() {
   vUv = uv;
   vec2 local = position.xy * uSize;            // the shared plane is 1×1
-  float bend = 1.0 - uOpen;                     // opening flattens everything
+  // opening collapses the strip onto the opened card and flattens it
+  float spread = 1.0 - uOpen;
+  // curvature: none while opening, and none on the centred card at rest, so the crisp DOM
+  // image (ProjectStrip) can sit on top of it pixel for pixel
+  float bend = spread * (1.0 - uFlat);
 
-  float X = (uIndex - uProgress) * uPitch * bend + local.x * mix(1.0, uOpenScale, uOpen);
+  float X = (uIndex - uProgress) * uPitch * spread + local.x * mix(1.0, uOpenScale, uOpen);
   float Y = local.y * mix(1.0, uOpenScale, uOpen);
 
   // 1. bend onto the inside of a cylinder: the edges recede
