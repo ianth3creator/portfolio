@@ -83,3 +83,11 @@ export type Certification = {
   /** photo or scan of the certificate */
   image?: CloudinaryAsset;
 };
+
+/** A fact the chat may use, written in Ian's words (edited in /admin → Chat knowledge). */
+export type ChatFact = {
+  /** the kind of question this answers, e.g. "What's your rate?" */
+  q: string;
+  /** the answer, in first person */
+  a: string;
+};

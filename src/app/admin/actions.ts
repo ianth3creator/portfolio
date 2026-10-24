@@ -8,6 +8,7 @@ import { isAdminEmail, requireAdmin, SESSION_COOKIE } from "@/lib/auth";
 import { PROJECTS_TAG } from "@/lib/projects";
 import { SKILLS_DOC, SKILLS_TAG } from "@/lib/skills";
 import { PROFILE_DOC, PROFILE_TAG } from "@/lib/site-profile";
+import { CHAT_DOC, CHAT_TAG } from "@/lib/chat-knowledge";
 
 const FIVE_DAYS = 60 * 60 * 24 * 5 * 1000;
 
@@ -144,5 +145,20 @@ export async function saveProfile(input: unknown): Promise<{ ok: true } | { ok: 
   if (!parsed.success) return { ok: false, error: z.prettifyError(parsed.error) };
   await adminDb().doc(PROFILE_DOC).set({ ...parsed.data, updatedAt: Date.now() });
   updateTag(PROFILE_TAG);
+  return { ok: true };
+}
+
+const chatSchema = z.object({
+  facts: z
+    .array(z.object({ q: z.string().trim().min(1, "Every fact needs a question"), a: z.string().trim().min(1, "Every fact needs an answer").max(1500) }))
+    .max(200),
+});
+
+export async function saveChatFacts(input: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
+  await requireAdmin();
+  const parsed = chatSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: z.prettifyError(parsed.error) };
+  await adminDb().doc(CHAT_DOC).set({ facts: parsed.data.facts, updatedAt: Date.now() });
+  updateTag(CHAT_TAG);
   return { ok: true };
 }

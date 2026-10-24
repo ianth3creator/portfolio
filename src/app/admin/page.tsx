@@ -10,6 +10,8 @@ import { SkillsEditor } from "@/components/admin/skills-editor";
 import { ProfileEditor } from "@/components/admin/profile-editor";
 import { getProfileContent } from "@/lib/site-profile";
 import { iconKey } from "@/lib/icon-key";
+import { ChatEditor } from "@/components/admin/chat-editor";
+import { getChatFacts } from "@/lib/chat-knowledge";
 
 export const metadata: Metadata = { title: "Admin", robots: { index: false, follow: false } };
 
@@ -28,7 +30,7 @@ export default function AdminPage() {
 async function AdminGate() {
   const email = await getAdmin();
   if (!email) return <SignIn />;
-  const [projects, skills, profile] = await Promise.all([getAllProjectsForAdmin(), getSkills(), getProfileContent()]);
+  const [projects, skills, profile, chatFacts] = await Promise.all([getAllProjectsForAdmin(), getSkills(), getProfileContent(), getChatFacts()]);
 
   // Logo previews for the saved skills (the icon set stays on the server)
   const icons = Object.fromEntries(
@@ -48,6 +50,10 @@ async function AdminGate() {
       <section className="mt-16">
         <h2 className="text-lg font-semibold tracking-tight">Skills</h2>
         <SkillsEditor initial={skills} icons={icons} />
+      </section>
+      <section className="mt-16">
+        <h2 className="text-lg font-semibold tracking-tight">Chat knowledge</h2>
+        <ChatEditor initial={chatFacts} />
       </section>
     </>
   );
