@@ -197,11 +197,12 @@ export default function GlassScene({ animate }: { animate: boolean }) {
   const [baseDpr] = useState(() => (window.matchMedia("(pointer: coarse)").matches ? 1.5 : 1.75));
   const stripOn = useSyncExternalStore(stripStore.subscribe, () => stripStore.get().stage !== null, () => false);
   const maxDpr = stripOn ? Math.max(baseDpr, Math.min(window.devicePixelRatio || 1, 2)) : baseDpr;
-  // Lowered under load, but only by a quarter (1x on a 3x phone made glass edges visibly
-  // pixelated), and reset on every page change: a heavy page shouldn't degrade the next one.
+  // Under load only the strip's extra sharpness is given up: never below the 1.5x / 1.75x base,
+  // because 1x (or even 1.1x) on a 3x phone made the glass edges visibly pixelated. The
+  // decision is per page, so a heavy page doesn't degrade the next one.
   const pathname = usePathname();
   const [lowered, setLowered] = useState<{ path: string } | null>(null);
-  const dpr = lowered?.path === pathname ? Math.max(1, maxDpr * 0.75) : maxDpr;
+  const dpr = lowered?.path === pathname ? baseDpr : maxDpr;
   useEffect(() => {
     document.documentElement.dataset.glass = "webgl";
     return () => {
