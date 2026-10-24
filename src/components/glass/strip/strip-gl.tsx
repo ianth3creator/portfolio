@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { motion, stripStore, type StripItem } from "@/lib/strip-store";
+import { motion, stripLayout, stripStore, type StripItem } from "@/lib/strip-store";
 import { loadCardTexture, PAPER_2, textureWidth } from "./card-texture";
 import { stripFragment, stripVertex } from "./strip-shader";
 
@@ -12,16 +12,10 @@ import { stripFragment, stripVertex } from "./strip-shader";
  * Renders nothing until ProjectStrip registers its stage element in stripStore.
  */
 
-const PHONE_MAX = 768;
 /** cards further than this from the centre (in card units) are hidden */
 const VISIBLE_RANGE = 2.6;
-
-/** Card size and spacing from the stage width W (spec §2). */
-export function stripLayout(W: number, viewportW: number) {
-  const cardW = viewportW < PHONE_MAX ? 0.82 * W : Math.min(0.56 * W, 860);
-  const cardH = (cardW * 10) / 16;
-  return { cardW, cardH, pitch: cardW * 1.08 };
-}
+/** px/s that counts as full speed for the wave */
+const FULL_SPEED = 2400;
 
 const paper = new THREE.Color().setRGB(
   parseInt(PAPER_2.slice(1, 3), 16) / 255,
@@ -33,16 +27,17 @@ const paper = new THREE.Color().setRGB(
 type Card = { mesh: THREE.Mesh; material: THREE.ShaderMaterial };
 
 export function StripGL() {
-  const { items, stage } = useSyncExternalStore(stripStore.subscribe, stripStore.get, stripStore.get);
+  const { items, stage, openIndex } = useSyncExternalStore(stripStore.subscribe, stripStore.get, stripStore.get);
   const group = useRef<THREE.Group>(null);
   const cards = useRef(new Map<number, Card>());
+  const last = useRef({ progress: motion.progress });
   const { size } = useThree();
   const geometry = useMemo(() => new THREE.PlaneGeometry(1, 1, 64, 16), []);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   // All layout happens here, in one place: per-card frame callbacks would run before this
   // one (React registers child effects first) and lag a frame behind the stage.
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     const g = group.current;
     if (!g || !stage) return;
     const rect = stage.getBoundingClientRect();
@@ -51,17 +46,42 @@ export function StripGL() {
     if (!onScreen) return;
 
     g.position.set(rect.left + rect.width / 2 - size.width / 2, -(rect.top + rect.height / 2 - size.height / 2), -100);
-    const { cardW, cardH, pitch } = stripLayout(rect.width, size.width);
+    const W = rect.width;
+    const { cardW, cardH, pitch, radius } = stripLayout(W, size.width);
     const progress = motion.progress;
 
+    // velocity from how fast the strip moved this frame, whatever moved it (swipe, tween, scroll)
+    const dt = Math.max(delta, 1 / 240);
+    const raw = ((progress - last.current.progress) * pitch) / dt;
+    last.current.progress = progress;
+    motion.velocity = THREE.MathUtils.damp(motion.velocity, THREE.MathUtils.clamp(raw / FULL_SPEED, -1, 1), 6, dt);
+
+    // zoom that makes the opened card fill the stage
+    const openScale = Math.min(W / cardW, rect.height / cardH);
+
     cards.current.forEach(({ mesh, material }, index) => {
-      mesh.visible = Math.abs(index - progress) < VISIBLE_RANGE;
+      const isOpen = openIndex === index;
+      mesh.visible = isOpen || Math.abs(index - progress) < VISIBLE_RANGE;
       if (!mesh.visible) return;
       const u = material.uniforms;
       u.uProgress.value = progress;
       u.uPitch.value = pitch;
       u.uSize.value.set(cardW, cardH);
+      u.uRadius.value = radius;
+      u.uVel.value = motion.velocity;
+      u.uTime.value = state.clock.elapsedTime;
+      u.uRadiusRest.value = 1.6 * W;
+      u.uRadiusFast.value = 0.9 * W;
+      u.uFocal.value = 1.2 * W;
+      u.uWaveY.value = 0.06 * cardH;
+      u.uWaveZ.value = 0.12 * cardW;
+      u.uWaveK.value = (2 * Math.PI) / (1.6 * cardW);
+      u.uOpen.value = isOpen ? motion.open : 0;
+      u.uOpenScale.value = openScale;
+      u.uDim.value = openIndex !== null && !isOpen ? motion.open : 0;
       u.uReveal.value = THREE.MathUtils.damp(u.uReveal.value, material.userData.loaded ? 1 : 0, 10, delta);
+      // the opened card draws on top of its neighbours
+      mesh.renderOrder = isOpen ? 1 : 0;
     });
   });
 
@@ -96,6 +116,18 @@ function StripCard({
       uProgress: { value: 0 },
       uPitch: { value: 1 },
       uSize: { value: new THREE.Vector2(1, 1) },
+      uRadius: { value: 14 },
+      uVel: { value: 0 },
+      uTime: { value: 0 },
+      uRadiusRest: { value: 1000 },
+      uRadiusFast: { value: 600 },
+      uFocal: { value: 800 },
+      uWaveY: { value: 0 },
+      uWaveZ: { value: 0 },
+      uWaveK: { value: 0.01 },
+      uOpen: { value: 0 },
+      uOpenScale: { value: 1 },
+      uDim: { value: 0 },
       uReveal: { value: 0 },
       uPaper: { value: new THREE.Vector3(paper.r, paper.g, paper.b) },
     }),
@@ -120,32 +152,42 @@ function StripCard({
     if (!material) return;
     let cancelled = false;
     let texture: THREE.Texture | null = null;
-    // size the texture to the card's real pixel width (stage width → card width × canvas DPR)
+    // Size the texture for how many pixels the card really covers; a texture below that
+    // looks soft (stretched), one far above it looks soft too (the GPU picks a smaller mip).
     const stageW = stripStore.get().stage?.getBoundingClientRect().width ?? window.innerWidth;
     const { cardW } = stripLayout(stageW, window.innerWidth);
-    loadCardTexture(item, textureWidth(cardW * gl.getPixelRatio()))
-      .then((tex) => {
-        if (cancelled || !tex) return tex?.dispose();
-        texture = tex;
-        gl.initTexture(tex); // upload now, not on the first frame the card is drawn
-        material.uniforms.uTex.value = tex;
-        material.userData.loaded = true;
-      })
-      .catch(() => {
-        // leave the card on paper; the grid below still links to the project
-      });
+    // whichever is denser: the screen, or the canvas (which renders above 1× even on 1× screens)
+    const density = Math.max(window.devicePixelRatio || 1, gl.getPixelRatio());
+    const width = textureWidth(cardW * Math.min(density, 2.5));
+    // Priority: the active card first, then outwards (spec §7)
+    const distance = Math.abs(index - stripStore.get().activeIndex);
+    const timer = setTimeout(() => {
+      loadCardTexture(item, width)
+        .then((tex) => {
+          if (cancelled || !tex) return tex?.dispose();
+          texture = tex;
+          gl.initTexture(tex); // upload now, not on the first frame the card is drawn
+          material.uniforms.uTex.value = tex;
+          material.userData.loaded = true;
+        })
+        .catch(() => {
+          // leave the card on paper; the grid below still links to the project
+        });
+    }, distance * 120);
     return () => {
       cancelled = true;
+      clearTimeout(timer);
       texture?.dispose();
       material.uniforms.uTex.value = null;
       material.userData.loaded = false;
     };
-  }, [gl, item]);
+  }, [gl, item, index]);
 
-  // frustumCulled off: the shader moves vertices far from the unit plane's bounds
+  // frustumCulled off: the shader moves vertices far from the unit plane's bounds.
+  // alphaToCoverage: smooth rounded corners with MSAA while the mesh stays opaque.
   return (
     <mesh ref={mesh} geometry={geometry} frustumCulled={false}>
-      <shaderMaterial ref={mat} vertexShader={stripVertex} fragmentShader={stripFragment} uniforms={uniforms} />
+      <shaderMaterial ref={mat} vertexShader={stripVertex} fragmentShader={stripFragment} uniforms={uniforms} alphaToCoverage />
     </mesh>
   );
 }

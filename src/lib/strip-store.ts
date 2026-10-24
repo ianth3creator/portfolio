@@ -6,15 +6,23 @@
  * - Everything else changes rarely and notifies subscribers (useSyncExternalStore).
  */
 
+import type { Project } from "@/lib/types";
+
 export type StripImage = { publicId: string; width: number; height: number };
 
 export type StripItem = {
   slug: string;
   title: string;
+  summary: string;
+  outcome: string;
+  /** platforms then stack, for the mono tag line */
+  tags: string[];
   /** the wide image (cover, else first web screenshot) */
   image?: StripImage;
   /** app-only projects: up to 3 phone screenshots, composited into one card texture */
   phones: StripImage[];
+  /** the same media as the grid cards, for the reduced-motion / no-WebGL row */
+  media: Pick<Project, "cover" | "webShots" | "appShots">;
 };
 
 type Snapshot = {
@@ -24,8 +32,21 @@ type Snapshot = {
   openIndex: number | null;
 };
 
-/** Per-frame values: progress in card units (float), velocity in px/s. */
-export const motion = { progress: 0, velocity: 0 };
+/**
+ * Per-frame values.
+ * progress: strip position in card units (float). velocity: smoothed, normalised −1…1 (written by StripGL).
+ * open: 0 → 1 while the active card unbends and zooms into the case study.
+ */
+export const motion = { progress: 0, velocity: 0, open: 0 };
+
+const PHONE_MAX = 768;
+
+/** Card size and spacing from the stage width W (spec §2). Shared by the DOM input and the shader. */
+export function stripLayout(W: number, viewportW: number) {
+  const cardW = viewportW < PHONE_MAX ? 0.82 * W : Math.min(0.56 * W, 860);
+  const cardH = (cardW * 10) / 16;
+  return { cardW, cardH, pitch: cardW * 1.08, radius: viewportW < PHONE_MAX ? 14 : 18 };
+}
 
 let snapshot: Snapshot = { items: [], stage: null, activeIndex: 0, openIndex: null };
 const listeners = new Set<() => void>();

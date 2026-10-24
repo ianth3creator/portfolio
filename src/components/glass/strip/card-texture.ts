@@ -5,7 +5,7 @@ import type { StripImage, StripItem } from "@/lib/strip-store";
 /** --paper-2 in sRGB, for the app-only card background and the shader's loading colour. */
 export const PAPER_2 = "#efebe3";
 
-const WIDTHS = [480, 640, 800, 960, 1280];
+const WIDTHS = [480, 640, 800, 960, 1280, 1600];
 
 /**
  * Texture width for a card drawn `cardPx` device pixels wide: the smallest standard width that

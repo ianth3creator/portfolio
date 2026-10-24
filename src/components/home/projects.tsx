@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ProjectStrip } from "@/components/projects/project-strip";
-import { CldImage } from "@/components/ui/cld-image";
+import { CardMedia } from "@/components/projects/card-media";
 import { platforms, wideImage } from "@/lib/project-utils";
 import { getProjects } from "@/lib/projects";
 import type { StripItem } from "@/lib/strip-store";
@@ -43,7 +43,7 @@ export async function Projects() {
                     <p className="mt-1 text-[15px] text-ink-2">{p.summary}</p>
                     {p.outcome && <p className="mt-3 text-[15px] font-medium">{p.outcome}</p>}
                     {(platforms(p).length > 0 || p.stack.length > 0) && (
-                      <p className="mt-4 font-mono text-[11px] tracking-[0.08em] text-ink-3 uppercase">
+                      <p className="mt-4 font-mono text-[11px] tracking-[0.08em] text-ink-3 uppercase [overflow-wrap:anywhere]">
                         {[...platforms(p), ...p.stack.slice(0, 3)].join(" · ")}
                       </p>
                     )}
@@ -59,54 +59,20 @@ export async function Projects() {
   );
 }
 
-/** Cover or first web screenshot; for app-only projects, up to three phone screens side by side. */
-function CardMedia({ project, wide }: { project: Project; wide: boolean }) {
-  const image = wideImage(project);
-  if (image) {
-    return (
-      <div className="overflow-hidden rounded-[16px]">
-        <CldImage
-          src={image.publicId}
-          width={image.width}
-          height={image.height}
-          crop="fill"
-          gravity="north"
-          sizes={wide ? "(min-width: 1024px) 1000px, 100vw" : "(min-width: 640px) 50vw, 100vw"}
-          alt=""
-          className="aspect-[16/10] w-full object-cover object-top transition-transform duration-500 ease-out group-hover:scale-[1.02]"
-        />
-      </div>
-    );
-  }
-  const phones = project.appShots.filter((a) => a.resourceType === "image").slice(0, 3);
-  if (!phones.length) return null;
-  return (
-    <div className="flex aspect-[16/10] items-end justify-center gap-[4%] overflow-hidden rounded-[16px] bg-paper-2 px-[8%] pt-[6%]">
-      {phones.map((a, i) => (
-        <CldImage
-          key={a.publicId}
-          src={a.publicId}
-          width={a.width}
-          height={a.height}
-          sizes="(min-width: 640px) 15vw, 30vw"
-          alt=""
-          className={`w-[28%] rounded-t-[14px] shadow-[0_10px_24px_-14px_oklch(0.2_0.02_60/0.5)] transition-transform duration-500 ease-out ${
-            i === 1 ? "-translate-y-[6%] group-hover:-translate-y-[9%]" : "group-hover:-translate-y-[2%]"
-          }`}
-        />
-      ))}
-    </div>
-  );
-}
-
 /** Plain, serialisable data for the strip (the client only needs images and names). */
 function toStripItem(p: Project): StripItem {
   const image = wideImage(p);
   const pick = (a: { publicId: string; width: number; height: number }) => ({ publicId: a.publicId, width: a.width, height: a.height });
+  const phones = p.appShots.filter((a) => a.resourceType === "image").slice(0, 3);
   return {
     slug: p.slug,
     title: p.title,
+    summary: p.summary,
+    outcome: p.outcome,
+    // a tag line, not a paragraph: shorten anything long that was typed into the stack field
+    tags: [...platforms(p), ...p.stack.slice(0, 3).map((t) => (t.length > 32 ? `${t.slice(0, 31).trim()}…` : t))],
     image: image ? pick(image) : undefined,
-    phones: p.appShots.filter((a) => a.resourceType === "image").slice(0, 3).map(pick),
+    phones: phones.map(pick),
+    media: { cover: p.cover, webShots: image && !p.cover ? [image] : [], appShots: phones },
   };
 }
