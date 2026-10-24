@@ -104,7 +104,22 @@ body::before {
   background: oklch(1 0 0 / 0.16);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
-  box-shadow: 0 14px 34px -18px oklch(0.3 0.03 60 / 0.22);
+  box-shadow:
+    0 14px 34px -18px oklch(0.3 0.03 60 / 0.22),
+    inset 0 0 0 1px oklch(1 0 0 / 0.55);
+}
+/*
+  The WebGL slab has no bevel (a bevel rendered as a grey, stair-stepped outline), so the edge
+  definition comes from this rim: a crisp vector line the browser draws at full resolution.
+*/
+:root[data-glass="webgl"] .glass[data-glass]::after {
+  background: linear-gradient(
+    140deg,
+    oklch(1 0 0 / 0.95) 0%,
+    oklch(1 0 0 / 0.35) 35%,
+    oklch(1 0 0 / 0.15) 60%,
+    oklch(1 0 0 / 0.7) 100%
+  );
 }
 :root[data-glass="webgl"] [data-glass="orb"] .glass {
   background: transparent;

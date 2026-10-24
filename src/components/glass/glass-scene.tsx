@@ -107,35 +107,26 @@ const glassProps = {
 } as const;
 
 /**
- * A thin glass slab whose corners match the element's CSS radius. drei's RoundedBox caps the
- * corner radius at half the depth, which on thin glass gave square corners behind rounded cards;
- * extruding a rounded rectangle keeps the face's radius independent of the thickness.
+ * A thin glass slab with exactly the element's CSS shape: true circular corners at the CSS
+ * radius, and no bevel. Seen head-on, a bevel became a 1-2px band of sharply refracted
+ * background (a grey, stair-stepped outline next to the CSS rim); without it the side walls are
+ * invisible and the glass ends in one clean, anti-aliased edge under the CSS rim.
  */
 function slabGeometry(w: number, h: number, r: number, depth: number) {
-  const bevel = Math.min(2.5, depth * 0.35);
-  // the bevel grows the outline, so draw the face that much smaller
-  const x = -w / 2 + bevel, y = -h / 2 + bevel, sw = w - bevel * 2, sh = h - bevel * 2;
-  const cr = Math.max(0, Math.min(r - bevel, sw / 2, sh / 2));
+  const x = -w / 2, y = -h / 2;
+  const cr = Math.max(0, Math.min(r, w / 2, h / 2));
   const shape = new THREE.Shape();
   shape.moveTo(x + cr, y);
-  shape.lineTo(x + sw - cr, y);
-  shape.quadraticCurveTo(x + sw, y, x + sw, y + cr);
-  shape.lineTo(x + sw, y + sh - cr);
-  shape.quadraticCurveTo(x + sw, y + sh, x + sw - cr, y + sh);
-  shape.lineTo(x + cr, y + sh);
-  shape.quadraticCurveTo(x, y + sh, x, y + sh - cr);
+  shape.lineTo(x + w - cr, y);
+  shape.absarc(x + w - cr, y + cr, cr, -Math.PI / 2, 0, false);
+  shape.lineTo(x + w, y + h - cr);
+  shape.absarc(x + w - cr, y + h - cr, cr, 0, Math.PI / 2, false);
+  shape.lineTo(x + cr, y + h);
+  shape.absarc(x + cr, y + h - cr, cr, Math.PI / 2, Math.PI, false);
   shape.lineTo(x, y + cr);
-  shape.quadraticCurveTo(x, y, x + cr, y);
-  const geo = new THREE.ExtrudeGeometry(shape, {
-    depth: depth - bevel * 2,
-    bevelEnabled: true,
-    bevelThickness: bevel,
-    bevelSize: bevel,
-    bevelSegments: 4,
-    curveSegments: 16,
-  });
+  shape.absarc(x + cr, y + cr, cr, Math.PI, Math.PI * 1.5, false);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 32 });
   geo.center();
-  geo.computeVertexNormals();
   return geo;
 }
 
