@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer, MeshTransmissionMaterial, PerformanceMonitor, RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
 import { Backdrop } from "./backdrop";
+import { StripGL } from "./strip/strip-gl";
+import { stripStore } from "@/lib/strip-store";
 
 /**
  * One fixed, full-screen canvas behind the page. Every DOM element with a
@@ -27,12 +29,15 @@ function useGlassTargets() {
     let next = 1;
     const scan = () => {
       const els = Array.from(document.querySelectorAll<HTMLElement>("[data-glass]"));
-      setTargets(
-        els.map((el) => {
+      // Any DOM change in the page triggers a scan (text swaps, animations adding spans), but the
+      // glass scene only needs to re-render when the set of glass elements actually changes.
+      setTargets((prev) => {
+        if (prev.length === els.length && prev.every((t, i) => t.el === els[i] && t.kind === (els[i].dataset.glass === "orb" ? "orb" : "panel"))) return prev;
+        return els.map((el) => {
           if (!ids.has(el)) ids.set(el, next++);
           return { id: ids.get(el)!, el, kind: el.dataset.glass === "orb" ? "orb" : "panel" };
-        }),
-      );
+        });
+      });
     };
     scan();
     const mo = new MutationObserver(scan);
@@ -145,15 +150,22 @@ function Scene({ animate }: { animate: boolean }) {
         <Lightformer intensity={1.5} position={[6, -1, 1]} scale={[3, 6, 1]} rotation-y={-Math.PI / 2} />
         <Lightformer intensity={0.6} color="#ffd9ec" position={[0, -5, 2]} scale={[10, 2, 1]} />
       </Environment>
+      {/* /projects bending strip; draws nothing until that page registers its stage */}
+      <StripGL />
       {targets.map((t) => (t.kind === "orb" ? <Orb key={t.id} el={t.el} /> : <Panel key={t.id} el={t.el} />))}
     </>
   );
 }
 
 export default function GlassScene({ animate }: { animate: boolean }) {
-  // Phones render the canvas at 1.5x, desktops at 1.75x (the text is HTML and always sharp). Drops to 1x when the frame rate can't hold, climbs back if it recovers.
-  const [maxDpr] = useState(() => (window.matchMedia("(pointer: coarse)").matches ? 1.5 : 1.75));
-  const [dpr, setDpr] = useState(maxDpr);
+  // Phones render the canvas at 1.5x, desktops at 1.75x (the text is HTML and always sharp).
+  // While the /projects strip is mounted it shows screenshots, so it gets up to 2x (the device's
+  // density, capped). Drops to 1x when the frame rate can't hold, climbs back if it recovers.
+  const [baseDpr] = useState(() => (window.matchMedia("(pointer: coarse)").matches ? 1.5 : 1.75));
+  const stripOn = useSyncExternalStore(stripStore.subscribe, () => stripStore.get().stage !== null, () => false);
+  const maxDpr = stripOn ? Math.max(baseDpr, Math.min(window.devicePixelRatio || 1, 2)) : baseDpr;
+  const [lowered, setLowered] = useState(false);
+  const dpr = lowered ? 1 : maxDpr;
   useEffect(() => {
     document.documentElement.dataset.glass = "webgl";
     return () => {
@@ -176,7 +188,7 @@ export default function GlassScene({ animate }: { animate: boolean }) {
           gl.transmissionResolutionScale = 0.75; // below 1 is cheaper; lower than this and paint behind glass looks pixelated
         }}
       >
-        <PerformanceMonitor flipflops={3} onDecline={() => setDpr(1)} onIncline={() => setDpr(maxDpr)} onFallback={() => setDpr(1)} />
+        <PerformanceMonitor flipflops={3} onDecline={() => setLowered(true)} onIncline={() => setLowered(false)} onFallback={() => setLowered(true)} />
         <Scene animate={animate} />
       </Canvas>
     </div>

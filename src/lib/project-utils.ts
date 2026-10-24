@@ -22,6 +22,6 @@ export function platforms(p: Project): string[] {
 }
 
 /** The wide image for cards: the cover, else the first web screenshot. */
-export function wideImage(p: Project): CloudinaryAsset | undefined {
+export function wideImage(p: Pick<Project, "cover" | "webShots">): CloudinaryAsset | undefined {
   return p.cover ?? p.webShots.find((a) => a.resourceType === "image");
 }

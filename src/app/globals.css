@@ -122,6 +122,19 @@ body::before {
   animation: page-enter 0.32s var(--ease-out) backwards;
 }
 
+/* /projects strip: the active project's title comes in word by word (project-strip.tsx) */
+@keyframes strip-word {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+.strip-word {
+  display: inline-block;
+  animation: strip-word 0.26s var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 20ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
