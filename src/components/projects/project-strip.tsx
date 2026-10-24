@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
@@ -77,6 +77,16 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
       Object.assign(motion, { progress: 0, velocity: 0, open: 0 });
       stripStore.setActive(0);
     };
+  }, []);
+
+  // Next.js keeps this page alive (hidden in React <Activity>) when you open a case study, and
+  // shows the same DOM again on return. The open transition faded the info block out, so clear
+  // any animation styles left on it before the page is shown again.
+  useLayoutEffect(() => {
+    if (!info.current) return;
+    gsap.killTweensOf(info.current);
+    gsap.set(info.current, { clearProps: "opacity,transform" });
+    gsap.set(info.current.querySelectorAll("[data-swap]"), { clearProps: "opacity,transform" });
   }, []);
 
   useEffect(() => {

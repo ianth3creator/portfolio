@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer, MeshTransmissionMaterial, PerformanceMonitor, RoundedBox } from "@react-three/drei";
+import { Environment, Lightformer, MeshTransmissionMaterial, PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import { Backdrop } from "./backdrop";
 import { StripGL } from "./strip/strip-gl";
@@ -105,22 +105,51 @@ const glassProps = {
   envMapIntensity: 0.9,
 } as const;
 
+/**
+ * A thin glass slab whose corners match the element's CSS radius. drei's RoundedBox caps the
+ * corner radius at half the depth, which on thin glass gave square corners behind rounded cards;
+ * extruding a rounded rectangle keeps the face's radius independent of the thickness.
+ */
+function slabGeometry(w: number, h: number, r: number, depth: number) {
+  const bevel = Math.min(2.5, depth * 0.35);
+  // the bevel grows the outline, so draw the face that much smaller
+  const x = -w / 2 + bevel, y = -h / 2 + bevel, sw = w - bevel * 2, sh = h - bevel * 2;
+  const cr = Math.max(0, Math.min(r - bevel, sw / 2, sh / 2));
+  const shape = new THREE.Shape();
+  shape.moveTo(x + cr, y);
+  shape.lineTo(x + sw - cr, y);
+  shape.quadraticCurveTo(x + sw, y, x + sw, y + cr);
+  shape.lineTo(x + sw, y + sh - cr);
+  shape.quadraticCurveTo(x + sw, y + sh, x + sw - cr, y + sh);
+  shape.lineTo(x + cr, y + sh);
+  shape.quadraticCurveTo(x, y + sh, x, y + sh - cr);
+  shape.lineTo(x, y + cr);
+  shape.quadraticCurveTo(x, y, x + cr, y);
+  const geo = new THREE.ExtrudeGeometry(shape, {
+    depth: depth - bevel * 2,
+    bevelEnabled: true,
+    bevelThickness: bevel,
+    bevelSize: bevel,
+    bevelSegments: 4,
+    curveSegments: 16,
+  });
+  geo.center();
+  geo.computeVertexNormals();
+  return geo;
+}
+
 function Panel({ el }: { el: HTMLElement }) {
   const { ref, w, h, r } = useTrack<THREE.Mesh>(el);
-  if (!w || !h) return <mesh ref={ref} />;
-  const depth = Math.min(28, Math.max(14, h * 0.35));
+  // Thin, gently refracting panels: thick slabs (14-28px, ior 1.35) bent the background hard at
+  // the bevels and read as chunky acrylic edges. The orb keeps the stronger glass.
+  const depth = Math.min(10, Math.max(6, h * 0.12));
+  const geometry = useMemo(() => (w && h ? slabGeometry(w, h, r, depth) : null), [w, h, r, depth]);
+  useEffect(() => () => geometry?.dispose(), [geometry]);
+  if (!geometry) return <mesh ref={ref} />;
   return (
-    <RoundedBox
-      key={`${w}x${h}x${r}`}
-      ref={ref}
-      args={[w, h, depth]}
-      radius={Math.max(1, Math.min(r, depth / 2 - 0.5))}
-      smoothness={6}
-      bevelSegments={6}
-      creaseAngle={0.6}
-    >
-      <MeshTransmissionMaterial {...glassProps} thickness={depth * 2.2} />
-    </RoundedBox>
+    <mesh ref={ref} geometry={geometry}>
+      <MeshTransmissionMaterial {...glassProps} ior={1.2} thickness={depth * 1.2} clearcoatRoughness={0.3} />
+    </mesh>
   );
 }
 
