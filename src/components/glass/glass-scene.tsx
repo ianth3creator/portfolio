@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { usePathname } from "next/navigation";
 import { Environment, Lightformer, MeshTransmissionMaterial, PerformanceMonitor } from "@react-three/drei";
 import * as THREE from "three";
 import { Backdrop } from "./backdrop";
@@ -192,12 +193,15 @@ function Scene({ animate }: { animate: boolean }) {
 export default function GlassScene({ animate }: { animate: boolean }) {
   // Phones render the canvas at 1.5x, desktops at 1.75x (the text is HTML and always sharp).
   // While the /projects strip is mounted it shows screenshots, so it gets up to 2x (the device's
-  // density, capped). Drops to 1x when the frame rate can't hold, climbs back if it recovers.
+  // density, capped).
   const [baseDpr] = useState(() => (window.matchMedia("(pointer: coarse)").matches ? 1.5 : 1.75));
   const stripOn = useSyncExternalStore(stripStore.subscribe, () => stripStore.get().stage !== null, () => false);
   const maxDpr = stripOn ? Math.max(baseDpr, Math.min(window.devicePixelRatio || 1, 2)) : baseDpr;
-  const [lowered, setLowered] = useState(false);
-  const dpr = lowered ? 1 : maxDpr;
+  // Lowered under load, but only by a quarter (1x on a 3x phone made glass edges visibly
+  // pixelated), and reset on every page change: a heavy page shouldn't degrade the next one.
+  const pathname = usePathname();
+  const [lowered, setLowered] = useState<{ path: string } | null>(null);
+  const dpr = lowered?.path === pathname ? Math.max(1, maxDpr * 0.75) : maxDpr;
   useEffect(() => {
     document.documentElement.dataset.glass = "webgl";
     return () => {
@@ -220,7 +224,7 @@ export default function GlassScene({ animate }: { animate: boolean }) {
           gl.transmissionResolutionScale = 0.75; // below 1 is cheaper; lower than this and paint behind glass looks pixelated
         }}
       >
-        <PerformanceMonitor flipflops={3} onDecline={() => setLowered(true)} onIncline={() => setLowered(false)} onFallback={() => setLowered(true)} />
+        <PerformanceMonitor key={pathname} flipflops={3} onDecline={() => setLowered({ path: pathname })} onIncline={() => setLowered(null)} onFallback={() => setLowered({ path: pathname })} />
         <Scene animate={animate} />
       </Canvas>
     </div>
