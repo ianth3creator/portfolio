@@ -5,14 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { SplitText } from "gsap/SplitText";
 import { useGSAP } from "@gsap/react";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { getLenis } from "@/lib/lenis";
 import { motion, stripLayout, stripStore, type StripItem } from "@/lib/strip-store";
 import { CardMedia } from "./card-media";
 
-gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText);
+gsap.registerPlugin(useGSAP, ScrollTrigger);
 
 /**
  * DOM side of the /projects strip (docs/projects-strip.md): the stage the WebGL cards are
@@ -309,11 +308,9 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
 
   useGSAP(
     () => {
-      const title = info.current?.querySelector<HTMLElement>("[data-title]");
-      if (!title) return;
+      if (!info.current) return;
       gsap.set(info.current!.querySelectorAll("[data-swap]"), { y: 0, opacity: 1 });
-      const split = SplitText.create(title, { type: "words" });
-      gsap.from(split.words, { y: 12, opacity: 0, duration: 0.26, ease: "power3.out", stagger: 0.02 });
+      // the title's words animate in with CSS (.strip-word), see globals.css
       gsap.from(info.current!.querySelectorAll("[data-fade]"), { opacity: 0, duration: 0.26, ease: "power2.out" });
     },
     { dependencies: [shown], scope: info },
@@ -373,7 +370,16 @@ function InteractiveStrip({ items }: { items: StripItem[] }) {
             data-swap
             className="text-[clamp(1.9rem,6.4vw,3rem)] leading-[1.04] font-semibold tracking-[-0.032em] text-balance"
           >
-            {current.title}
+            {/*
+              Words are spans from the start and animate in with CSS keyframes (staggered by
+              --i). SplitText rewrote this DOM on every swap and, with GSAP driving each word,
+              dropped a 4x-throttled phone from ~30 to 8 fps while the strip moved.
+            */}
+            {current.title.split(/\s+/).map((word, i) => (
+              <span key={i} className="strip-word" style={{ "--i": i } as React.CSSProperties}>
+                {word}{" "}
+              </span>
+            ))}
           </h2>
           <div data-swap data-fade>
             {current.outcome && <p className="mt-3 line-clamp-3 max-w-[56ch] text-[17px] font-medium sm:text-[19px]">{current.outcome}</p>}

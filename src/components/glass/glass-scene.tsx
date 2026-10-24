@@ -29,12 +29,15 @@ function useGlassTargets() {
     let next = 1;
     const scan = () => {
       const els = Array.from(document.querySelectorAll<HTMLElement>("[data-glass]"));
-      setTargets(
-        els.map((el) => {
+      // Any DOM change in the page triggers a scan (text swaps, animations adding spans), but the
+      // glass scene only needs to re-render when the set of glass elements actually changes.
+      setTargets((prev) => {
+        if (prev.length === els.length && prev.every((t, i) => t.el === els[i] && t.kind === (els[i].dataset.glass === "orb" ? "orb" : "panel"))) return prev;
+        return els.map((el) => {
           if (!ids.has(el)) ids.set(el, next++);
           return { id: ids.get(el)!, el, kind: el.dataset.glass === "orb" ? "orb" : "panel" };
-        }),
-      );
+        });
+      });
     };
     scan();
     const mo = new MutationObserver(scan);

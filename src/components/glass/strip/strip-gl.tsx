@@ -27,7 +27,10 @@ const paper = new THREE.Color().setRGB(
 type Card = { mesh: THREE.Mesh; material: THREE.ShaderMaterial };
 
 export function StripGL() {
-  const { items, stage, openIndex } = useSyncExternalStore(stripStore.subscribe, stripStore.get, stripStore.get);
+  // separate selectors, so moving between cards (activeIndex) doesn't re-render the scene
+  const items = useSyncExternalStore(stripStore.subscribe, () => stripStore.get().items, () => stripStore.get().items);
+  const stage = useSyncExternalStore(stripStore.subscribe, () => stripStore.get().stage, () => null);
+  const openIndex = useSyncExternalStore(stripStore.subscribe, () => stripStore.get().openIndex, () => null);
   const group = useRef<THREE.Group>(null);
   const cards = useRef(new Map<number, Card>());
   const last = useRef({ progress: motion.progress });

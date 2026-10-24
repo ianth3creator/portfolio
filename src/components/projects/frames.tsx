@@ -22,7 +22,7 @@ export function Media({ asset, alt, sizes, priority, className }: { asset: Cloud
 }
 
 /** Minimal browser window: traffic-light dots and an address pill with the site name. */
-export function BrowserFrame({ asset, site, href, alt }: { asset: CloudinaryAsset; site: string | null; href?: string; alt: string }) {
+export function BrowserFrame({ asset, site, href, alt, priority }: { asset: CloudinaryAsset; site: string | null; href?: string; alt: string; priority?: boolean }) {
   const pill = (
     <span className="inline-flex max-w-full items-center gap-1.5 truncate rounded-full bg-white/70 px-3 py-1 font-mono text-[11px] text-ink-2">
       <svg viewBox="0 0 24 24" className="size-3 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
@@ -50,7 +50,7 @@ export function BrowserFrame({ asset, site, href, alt }: { asset: CloudinaryAsse
           )}
         </span>
       </div>
-      <Media asset={asset} alt={alt} sizes="(min-width: 896px) 880px, 100vw" />
+      <Media asset={asset} alt={alt} priority={priority} sizes="(min-width: 1024px) 720px, 100vw" />
     </div>
   );
 }
